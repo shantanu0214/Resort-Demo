@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resort Management System – HLD</title>
+<style>
+:root{--bg:#faf6ee;--fg:#222;--card:#fff;--g:#1f4d3a;--gold:#b8964e;--mut:#666;--line:#ddd}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15201b;--fg:#eee;--card:#1e2c26;--g:#6fbf9a;--gold:#d4b46a;--mut:#aaa;--line:#355}}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;line-height:1.5}
+main{max-width:900px;margin:auto;padding:14px}
+h1{color:var(--g);font-size:1.6rem}h2{color:var(--g);border-bottom:2px solid var(--gold);padding-bottom:4px;margin-top:32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{border:1px solid var(--line);padding:6px 8px;text-align:left}th{background:var(--g);color:var(--bg)}
+code{background:var(--line);padding:1px 5px;border-radius:4px}
+svg text{fill:var(--fg);font:13px system-ui}svg .b{fill:var(--card);stroke:var(--g);stroke-width:1.5}svg .f{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-dasharray:5 4}svg .l{stroke:var(--g);stroke-width:1.5;fill:none}svg .t{font-weight:700}
+</style></head><body><main>
+<h1>🌴 Aurelia Resort Management System – High Level Design</h1>
+<p>Scope: guest booking (web + PWA app) and admin management. Demo build is a modular monolith; production upgrades are listed as future phase.</p>
+
+<h2>1. Architecture</h2>
+<div class="scroll"><svg viewBox="0 0 700 430" width="100%" style="min-width:560px" role="img" aria-label="Architecture diagram">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" fill="#b8964e"/></marker></defs>
+<rect class="b" x="30" y="20" width="190" height="60" rx="8"/><text class="t" x="125" y="46" text-anchor="middle">Guest Web</text><text x="125" y="65" text-anchor="middle">React (Vercel)</text>
+<rect class="b" x="255" y="20" width="190" height="60" rx="8"/><text class="t" x="350" y="46" text-anchor="middle">Guest App (PWA)</text><text x="350" y="65" text-anchor="middle">Installable, same code</text>
+<rect class="b" x="480" y="20" width="190" height="60" rx="8"/><text class="t" x="575" y="46" text-anchor="middle">Admin Panel</text><text x="575" y="65" text-anchor="middle">React, Basic auth</text>
+<path class="l" d="M125 80V130M350 80V130M575 80V130" marker-end="url(#a)"/>
+<text x="350" y="112" text-anchor="middle" style="fill:var(--mut)">HTTPS / REST (JSON)</text>
+<rect class="b" x="30" y="135" width="640" height="150" rx="10"/><text class="t" x="350" y="158" text-anchor="middle">Spring Boot API (Render, Docker)</text>
+<rect class="b" x="50" y="175" width="135" height="50" rx="6"/><text x="117" y="205" text-anchor="middle">Auth / Security</text>
+<rect class="b" x="198" y="175" width="135" height="50" rx="6"/><text x="265" y="205" text-anchor="middle">Rooms</text>
+<rect class="b" x="346" y="175" width="135" height="50" rx="6"/><text x="413" y="205" text-anchor="middle">Booking</text>
+<rect class="b" x="494" y="175" width="160" height="50" rx="6"/><text x="574" y="205" text-anchor="middle">Payment (mock)</text>
+<text x="350" y="255" text-anchor="middle" style="fill:var(--mut)">Controller → Service → JPA Repository</text>
+<path class="l" d="M350 285V325" marker-end="url(#a)"/>
+<rect class="b" x="215" y="330" width="270" height="60" rx="8"/><text class="t" x="350" y="355" text-anchor="middle">Database</text><text x="350" y="375" text-anchor="middle">H2 (demo) → MySQL / PostgreSQL (prod)</text>
+<rect class="f" x="540" y="320" width="140" height="35" rx="6"/><text x="610" y="342" text-anchor="middle">Razorpay (future)</text>
+<rect class="f" x="540" y="362" width="140" height="35" rx="6"/><text x="610" y="384" text-anchor="middle">Email / SMS (future)</text>
+<rect class="f" x="30" y="320" width="140" height="35" rx="6"/><text x="100" y="342" text-anchor="middle">Redis cache (future)</text>
+<rect class="f" x="30" y="362" width="140" height="35" rx="6"/><text x="100" y="384" text-anchor="middle">S3 images (future)</text>
+</svg></div>
+<p>Dashed boxes = future phase, not built in demo.</p>
+
+<h2>2. Database (ER)</h2>
+<div class="card scroll"><table>
+<tr><th>Table</th><th>Columns</th></tr>
+<tr><td><b>room</b></td><td>id PK, name, type, capacity, price, image</td></tr>
+<tr><td><b>booking</b></td><td>id PK, room_id FK→room, guest_name, email, phone, check_in, check_out, total, status (CONFIRMED / CANCELLED)</td></tr>
+<tr><td><b>users</b> (future)</td><td>id PK, name, email, password_hash, role (GUEST / ADMIN)</td></tr>
+<tr><td><b>payment</b> (future)</td><td>id PK, booking_id FK, gateway_ref, amount, status</td></tr>
+</table><p>Relation: one room has many bookings. Availability rule: a booking overlaps if <code>check_in &lt; new.check_out AND check_out &gt; new.check_in</code> and status is not CANCELLED.</p></div>
+
+<h2>3. API list</h2>
+<div class="card scroll"><table>
+<tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Purpose</th></tr>
+<tr><td>GET</td><td>/api/rooms</td><td>Public</td><td>All rooms</td></tr>
+<tr><td>GET</td><td>/api/rooms/available?checkIn&amp;checkOut</td><td>Public</td><td>Free rooms for dates</td></tr>
+<tr><td>POST</td><td>/api/concierge</td><td>Public, rate limited</td><td>AI concierge chat (Claude API proxy)</td></tr>
+<tr><td>GET</td><td>/api/quote?roomId&amp;checkIn&amp;checkOut</td><td>Public</td><td>Dynamic price quote</td></tr>
+<tr><td>POST</td><td>/api/bookings</td><td>Public</td><td>Create booking (mock payment)</td></tr>
+<tr><td>GET</td><td>/api/bookings?email=</td><td>Public</td><td>Guest bookings</td></tr>
+<tr><td>GET</td><td>/api/admin/bookings, /stats</td><td>Admin</td><td>All bookings, dashboard numbers</td></tr>
+<tr><td>PUT</td><td>/api/admin/bookings/{id}/cancel</td><td>Admin</td><td>Cancel booking</td></tr>
+<tr><td>POST</td><td>/api/admin/rooms</td><td>Admin</td><td>Add room</td></tr>
+</table></div>
+
+<h2>4. Booking flow</h2>
+<ol><li>Guest picks dates → API returns only free rooms</li><li>Guest selects room, enters details</li><li>Server revalidates dates and availability, calculates total = price × nights</li><li>Mock payment succeeds → booking saved as CONFIRMED</li><li>Admin sees booking and revenue on dashboard</li></ol>
+
+<h2>5. Tech choices and why</h2>
+<ul><li><b>Spring Boot modular monolith:</b> fastest to build and deploy; modules can split into microservices later</li><li><b>React + PWA:</b> one codebase serves web and installable app</li><li><b>Basic auth in demo:</b> JWT with Spring Security planned for production</li><li><b>Docker on Render, Vercel for frontend:</b> free HTTPS deployment</li></ul>
+
+<h2>6. Scalability design</h2>
+<div class="card scroll"><table>
+<tr><th>Layer</th><th>Strategy</th></tr>
+<tr><td>API</td><td>Stateless (JWT, no server session), so N instances run behind a load balancer; Kubernetes HPA autoscaling on CPU / request rate</td></tr>
+<tr><td>Database</td><td>Managed PostgreSQL / MySQL, indexes on room_id, check_in, check_out; read replicas for search; connection pooling</td></tr>
+<tr><td>Cache</td><td>Redis for room list and availability search results, short TTL</td></tr>
+<tr><td>Static / images</td><td>Frontend and images on CDN, so API does not serve them</td></tr>
+<tr><td>Async work</td><td>Kafka / RabbitMQ queue for email, SMS, payment webhooks; booking API stays fast</td></tr>
+<tr><td>Protection</td><td>Rate limiting at gateway, health checks, timeouts, circuit breakers</td></tr>
+<tr><td>Observability</td><td>Prometheus + Grafana metrics, centralised logs, alerts</td></tr>
+</table><p>Honest note: the demo runs on one small instance. The design allows horizontal scaling; real capacity numbers need a load test (k6 / JMeter).</p></div>
+
+<h2>7. Concurrency control and dynamic pricing</h2>
+<div class="card"><p><b>Double booking prevention:</b> booking runs in one transaction. The room row is locked (pessimistic write lock) first, then availability is checked, then the booking is saved. Two guests booking the same room and dates at the same moment: the second waits, then gets a conflict. At larger scale: add a DB constraint or Redis distributed lock.</p><p><b>Dynamic pricing (per night):</b> weekend (Fri, Sat) +20%, peak season Oct to Feb +15%, last-minute (within 3 days) +10%. Server calculates the quote and the final total, so the client cannot tamper with prices.</p><p><b>AI concierge:</b> floating chat in web and PWA. The browser calls our backend, and the backend calls the Claude API with a system prompt built from live room data and pricing rules. The API key stays in a server environment variable, never in the frontend. Protections: 15 messages per minute per IP, message length and history limits, spend limit on the API account. Guests can ask in English, Hindi or Marathi. Without an API key the concierge falls back to a rule-based demo mode (budget, family, pricing questions answered from live room data), clearly labelled in the chat; connecting a key switches it to full AI.</p></div>
+
+<h2>8. Future phases</h2>
+<ul><li>JWT login for guests, booking history per account</li><li>Razorpay / Stripe payments with webhooks</li><li>Redis caching for room search, email/SMS confirmations</li><li>S3/CDN for images, MySQL/PostgreSQL with backups</li><li>Native app (React Native / Flutter), reports and housekeeping module</li></ul>
+
+<h2>9. Demo script (about 8 minutes)</h2>
+<div class="card scroll"><table>
+<tr><th>Min</th><th>Show</th><th>Say</th></tr>
+<tr><td>0–1</td><td>This HLD diagram</td><td>Clients, API modules, DB, future boxes</td></tr>
+<tr><td>1–2</td><td>Guest site, rooms</td><td>Responsive, rooms with pricing</td></tr>
+<tr><td>2–4</td><td>Pick dates → select room → book</td><td>Dynamic pricing quote, availability check, mock payment</td></tr>
+<tr><td>4–5</td><td>Book same room same dates again</td><td>Conflict handled, room no longer listed</td></tr>
+<tr><td>5–6</td><td>My Bookings with email</td><td>Guest self-service</td></tr>
+<tr><td>5.5–6</td><td>Chat bubble: ask for a family room under a budget</td><td>AI concierge grounded in live room data, replies in guest language</td></tr>
+<tr><td>6–7</td><td>Admin login → dashboard → cancel booking</td><td>Stats update, cancelled dates free up</td></tr>
+<tr><td>7–8</td><td>Phone: Add to Home Screen</td><td>Same code works as app; native app in future phase</td></tr>
+</table></div>
+</main></body></html>
