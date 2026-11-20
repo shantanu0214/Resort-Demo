@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 const J = { "Content-Type": "application/json" };
@@ -18,7 +18,7 @@ export default function App() {
   return (
     <>
       <header className="top">
-        <div className="logo">Aurelia<span>RESORT</span></div>
+        <div className="logo">Green Shadow<span>RESORT</span></div>
         <nav>{tabs.map(([k, i, v]) => (
           <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}><i>{i}</i>{v}</button>))}
         </nav>
@@ -33,8 +33,9 @@ export default function App() {
 
 function Stay() {
   const [d, setD] = useState({ checkIn: "", checkOut: "" });
+  const [guests, setGuests] = useState(2);
   const [all, setAll] = useState([]);
-  const [rooms, setRooms] = useState(null);
+  const [avail, setAvail] = useState(null);
   const [sel, setSel] = useState(null);
   const [q, setQ] = useState(null);
   const [f, setF] = useState({ guestName: "", email: "", phone: "" });
@@ -45,16 +46,16 @@ function Stay() {
 
   const search = async () => {
     setErr(""); setSel(null);
-    try { setRooms(await call(`/rooms/available?checkIn=${d.checkIn}&checkOut=${d.checkOut}`)); go("rooms"); }
+    try { setAvail(await call(`/rooms/available?checkIn=${d.checkIn}&checkOut=${d.checkOut}`)); go("houses"); }
     catch (e) { setErr(e.message); }
   };
   const pick = async r => {
     setSel(r); setQ(null); setErr(""); go("summary");
-    try { setQ(await call(`/quote?roomId=${r.id}&checkIn=${d.checkIn}&checkOut=${d.checkOut}`)); } catch {}
+    try { setQ(await call(`/quote?roomId=${r.id}&checkIn=${d.checkIn}&checkOut=${d.checkOut}&guests=${guests}`)); } catch {}
   };
   const pay = async () => {
     setErr("");
-    try { setDone(await call("/bookings", { method: "POST", headers: J, body: JSON.stringify({ ...f, ...d, roomId: sel.id }) })); setSel(null); setRooms(null); window.scrollTo(0, 0); }
+    try { setDone(await call("/bookings", { method: "POST", headers: J, body: JSON.stringify({ ...f, ...d, guests, roomId: sel.id }) })); setSel(null); setAvail(null); window.scrollTo(0, 0); }
     catch (e) { setErr(e.message); }
   };
 
@@ -67,24 +68,27 @@ function Stay() {
     </div></main>
   );
 
-  const list = rooms || all;
-  const adj = q && sel ? q.total - sel.price * nights : 0;
+  const list = (avail || all).filter(r => r.capacity >= guests);
+  const base = sel ? sel.price * guests * nights : 0;
+  const adj = q && sel ? q.total - base : 0;
   return (
     <>
       <section className="hero"><div className="heroin">
-        <p className="eyebrow">AURELIA RESORT</p>
+        <p className="eyebrow">Green Shadow RESORT</p>
         <h1>Where the forest meets luxury</h1>
         <p className="sub">Handcrafted stays, lake views and unhurried mornings.</p>
         <div className="search">
           <label>Check-in<input type="date" min={today()} value={d.checkIn} onChange={e => setD({ ...d, checkIn: e.target.value })} /></label>
           <label>Check-out<input type="date" min={d.checkIn || today()} value={d.checkOut} onChange={e => setD({ ...d, checkOut: e.target.value })} /></label>
+          <label>Guests<select value={guests} onChange={e => { setGuests(+e.target.value); setSel(null); }}>
+            {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}</select></label>
           <button onClick={search} disabled={nights < 1}>Check availability</button>
         </div>
         {err && !sel && <p className="err">{err}</p>}
       </div></section>
 
-      <main className="wrap" id="rooms">
-        <h2>{rooms ? (rooms.length ? `${rooms.length} rooms available · ${nights} night${nights > 1 ? "s" : ""}` : "No rooms available for these dates") : "Our rooms"}</h2>
+      <main className="wrap" id="houses">
+        <h2>{avail ? (list.length ? `${list.length} house${list.length > 1 ? "s" : ""} available · ${nights} night${nights > 1 ? "s" : ""}` : "No house available for these dates") : "Our houses"}</h2>
         <div className="grid">
           {list.map(r => (
             <article className="room" key={r.id}>
@@ -92,8 +96,8 @@ function Stay() {
               <div className="body">
                 <h3>{r.name}</h3>
                 <p className="meta">👥 Up to {r.capacity} guests · 🌿 Breakfast included</p>
-                <div className="row"><div><small>from</small><b className="price">{inr(r.price)}</b><small> / night</small></div>
-                  {rooms ? <button onClick={() => pick(r)}>Select</button> : <button className="ghost" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Pick dates</button>}
+                <div className="row"><div><small>from</small><b className="price">{inr(r.price)}</b><small> / person / night</small></div>
+                  {avail ? <button onClick={() => pick(r)}>Select</button> : <button className="ghost" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Pick dates</button>}
                 </div>
               </div>
             </article>))}
@@ -103,9 +107,9 @@ function Stay() {
           <div className="summary" id="summary">
             <div>
               <h3>{sel.name}</h3>
-              <p className="meta">{d.checkIn} → {d.checkOut} · {nights} night{nights > 1 ? "s" : ""}</p>
+              <p className="meta">{d.checkIn} → {d.checkOut} · {nights} night{nights > 1 ? "s" : ""} · {guests} guest{guests > 1 ? "s" : ""}</p>
               <ul>
-                <li><span>Base rate × {nights}</span><b>{inr(sel.price * nights)}</b></li>
+                <li><span>{inr(sel.price)} × {guests} guest{guests > 1 ? "s" : ""} × {nights} night{nights > 1 ? "s" : ""}</span><b>{inr(base)}</b></li>
                 {q && <li><span>Weekend / season / last-minute</span><b>{adj >= 0 ? "+" : "−"}{inr(Math.abs(adj))}</b></li>}
                 <li className="tot"><span>Total</span><b>{q ? inr(q.total) : "…"}</b></li>
               </ul>
@@ -122,7 +126,6 @@ function Stay() {
     </>
   );
 }
-
 const Chip = ({ s }) => <span className={"chip " + s}>{s}</span>;
 
 function Table({ rows, onCancel }) {
@@ -182,7 +185,7 @@ function Admin() {
     <main className="wrap page">
       <h2>Dashboard</h2>
       <div className="stats">
-        <div><small>Rooms</small><b>{stats.rooms}</b></div>
+        <div><small>House</small><b>{stats.House}</b></div>
         <div><small>Bookings</small><b>{stats.bookings}</b></div>
         <div><small>Revenue</small><b>{inr(stats.revenue)}</b></div>
         <div><small>Occupied today</small><b>{stats.occupiedToday}</b></div>
@@ -194,7 +197,7 @@ function Admin() {
 
 function Chat() {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState([{ role: "assistant", content: "Hello! I'm the Aurelia concierge. Ask me about rooms, prices or planning your stay 🌴" }]);
+  const [msgs, setMsgs] = useState([{ role: "assistant", content: "Hello! I'm the Green Shadow concierge. Ask me about House, prices or planning your stay 🌴" }]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [demo, setDemo] = useState(false);
@@ -214,7 +217,7 @@ function Chat() {
       <button className="fab" onClick={() => setOpen(!open)}>{open ? "✕" : "💬"}</button>
       {open && (
         <div className="chat">
-          <div className="chead">Aurelia Concierge</div>
+          <div className="chead">Green Shadow Concierge</div>
           {demo && <small className="note">Demo mode: simple rule-based replies, not full AI</small>}
           <div className="log">{msgs.map((m, i) => <p key={i} className={m.role}>{m.content}</p>)}{busy && <p className="assistant">…</p>}</div>
           <div className="in">

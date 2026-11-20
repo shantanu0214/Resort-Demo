@@ -1,6 +1,6 @@
 # Resort Management System – Project Status
 ## Done
-- Spring Boot backend (backend/): rooms, availability, booking (mock payment), my bookings, admin stats/cancel/add room, Basic auth, H2 + seed data
+- Spring Boot backend (backend/): House, availability, booking (mock payment), my bookings, admin stats/cancel/add room, Basic auth, H2 + seed data
 - React + Vite web (frontend/): Book, My Bookings, Admin; PWA manifest + icons + service worker
 - Deploy config: backend/Dockerfile (Render), VITE_API_URL (Vercel/Netlify)
 - Concurrency fix: transactional BookingService with pessimistic row lock (no double booking)

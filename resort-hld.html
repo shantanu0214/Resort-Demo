@@ -14,7 +14,7 @@ h1{color:var(--g);font-size:1.6rem}h2{color:var(--g);border-bottom:2px solid var
 code{background:var(--line);padding:1px 5px;border-radius:4px}
 svg text{fill:var(--fg);font:13px system-ui}svg .b{fill:var(--card);stroke:var(--g);stroke-width:1.5}svg .f{fill:none;stroke:var(--gold);stroke-width:1.5;stroke-dasharray:5 4}svg .l{stroke:var(--g);stroke-width:1.5;fill:none}svg .t{font-weight:700}
 </style></head><body><main>
-<h1>🌴 Aurelia Resort Management System – High Level Design</h1>
+<h1>🌴 Green Shadow Resort Management System – High Level Design</h1>
 <p>Scope: guest booking (web + PWA app) and admin management. Demo build is a modular monolith; production upgrades are listed as future phase.</p>
 
 <h2>1. Architecture</h2>
@@ -27,7 +27,7 @@ svg text{fill:var(--fg);font:13px system-ui}svg .b{fill:var(--card);stroke:var(-
 <text x="350" y="112" text-anchor="middle" style="fill:var(--mut)">HTTPS / REST (JSON)</text>
 <rect class="b" x="30" y="135" width="640" height="150" rx="10"/><text class="t" x="350" y="158" text-anchor="middle">Spring Boot API (Render, Docker)</text>
 <rect class="b" x="50" y="175" width="135" height="50" rx="6"/><text x="117" y="205" text-anchor="middle">Auth / Security</text>
-<rect class="b" x="198" y="175" width="135" height="50" rx="6"/><text x="265" y="205" text-anchor="middle">Rooms</text>
+<rect class="b" x="198" y="175" width="135" height="50" rx="6"/><text x="265" y="205" text-anchor="middle">House</text>
 <rect class="b" x="346" y="175" width="135" height="50" rx="6"/><text x="413" y="205" text-anchor="middle">Booking</text>
 <rect class="b" x="494" y="175" width="160" height="50" rx="6"/><text x="574" y="205" text-anchor="middle">Payment (mock)</text>
 <text x="350" y="255" text-anchor="middle" style="fill:var(--mut)">Controller → Service → JPA Repository</text>
@@ -52,19 +52,19 @@ svg text{fill:var(--fg);font:13px system-ui}svg .b{fill:var(--card);stroke:var(-
 <h2>3. API list</h2>
 <div class="card scroll"><table>
 <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Purpose</th></tr>
-<tr><td>GET</td><td>/api/rooms</td><td>Public</td><td>All rooms</td></tr>
-<tr><td>GET</td><td>/api/rooms/available?checkIn&amp;checkOut</td><td>Public</td><td>Free rooms for dates</td></tr>
+<tr><td>GET</td><td>/api/House</td><td>Public</td><td>All House</td></tr>
+<tr><td>GET</td><td>/api/House/available?checkIn&amp;checkOut</td><td>Public</td><td>Free House for dates</td></tr>
 <tr><td>POST</td><td>/api/concierge</td><td>Public, rate limited</td><td>AI concierge chat (Claude API proxy)</td></tr>
 <tr><td>GET</td><td>/api/quote?roomId&amp;checkIn&amp;checkOut</td><td>Public</td><td>Dynamic price quote</td></tr>
 <tr><td>POST</td><td>/api/bookings</td><td>Public</td><td>Create booking (mock payment)</td></tr>
 <tr><td>GET</td><td>/api/bookings?email=</td><td>Public</td><td>Guest bookings</td></tr>
 <tr><td>GET</td><td>/api/admin/bookings, /stats</td><td>Admin</td><td>All bookings, dashboard numbers</td></tr>
 <tr><td>PUT</td><td>/api/admin/bookings/{id}/cancel</td><td>Admin</td><td>Cancel booking</td></tr>
-<tr><td>POST</td><td>/api/admin/rooms</td><td>Admin</td><td>Add room</td></tr>
+<tr><td>POST</td><td>/api/admin/House</td><td>Admin</td><td>Add room</td></tr>
 </table></div>
 
 <h2>4. Booking flow</h2>
-<ol><li>Guest picks dates → API returns only free rooms</li><li>Guest selects room, enters details</li><li>Server revalidates dates and availability, calculates total = price × nights</li><li>Mock payment succeeds → booking saved as CONFIRMED</li><li>Admin sees booking and revenue on dashboard</li></ol>
+<ol><li>Guest picks dates → API returns only free House</li><li>Guest selects room, enters details</li><li>Server revalidates dates and availability, calculates total = price × nights</li><li>Mock payment succeeds → booking saved as CONFIRMED</li><li>Admin sees booking and revenue on dashboard</li></ol>
 
 <h2>5. Tech choices and why</h2>
 <ul><li><b>Spring Boot modular monolith:</b> fastest to build and deploy; modules can split into microservices later</li><li><b>React + PWA:</b> one codebase serves web and installable app</li><li><b>Basic auth in demo:</b> JWT with Spring Security planned for production</li><li><b>Docker on Render, Vercel for frontend:</b> free HTTPS deployment</li></ul>
@@ -91,7 +91,7 @@ svg text{fill:var(--fg);font:13px system-ui}svg .b{fill:var(--card);stroke:var(-
 <div class="card scroll"><table>
 <tr><th>Min</th><th>Show</th><th>Say</th></tr>
 <tr><td>0–1</td><td>This HLD diagram</td><td>Clients, API modules, DB, future boxes</td></tr>
-<tr><td>1–2</td><td>Guest site, rooms</td><td>Responsive, rooms with pricing</td></tr>
+<tr><td>1–2</td><td>Guest site, House</td><td>Responsive, House with pricing</td></tr>
 <tr><td>2–4</td><td>Pick dates → select room → book</td><td>Dynamic pricing quote, availability check, mock payment</td></tr>
 <tr><td>4–5</td><td>Book same room same dates again</td><td>Conflict handled, room no longer listed</td></tr>
 <tr><td>5–6</td><td>My Bookings with email</td><td>Guest self-service</td></tr>
