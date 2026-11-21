@@ -378,12 +378,8 @@ public class ResortApplication {
     return x -> {
       String u = "https://picsum.photos/seed/";
       House.saveAll(List.of(
-          new Room("Forest Deluxe", "Deluxe", 2, 2000, u + "r1/600/380"),
-          new Room("Lake View Suite", "Suite", 3, 2000, u + "r2/600/380"),
-          new Room("Treehouse Villa", "Villa", 4, 2000, u + "r3/600/380"),
-          new Room("Garden Cottage", "Cottage", 2, 2000, u + "r4/600/380"),
-          new Room("Family Suite", "Suite", 5, 2000, u + "r5/600/380"),
-          new Room("Presidential Villa", "Villa", 6, 2000, u + "r6/600/380")));
+    new Room("Mango Farm House", "Farm House", 6, 2000, "/mango1.jpg")
+  ));
     };
   }
 }
